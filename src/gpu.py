@@ -27,6 +27,9 @@ class Monitor(Thread):
         self.stopped = True
 
 class GPUChecker:
+    def __init__(self, gpu_id):
+        self.gpu_id = gpu_id
+
     def check_gpu_by_id(self, id, memory):
         gpu_used = get_gpu_memory_map()
         assert gpu_used[id] >= memory
