@@ -34,7 +34,6 @@ class GPUChecker:
     def check_gpu_by_id(self, id, memory):
         gpu_used = get_gpu_memory_map()
         assert gpu_used[id] >= memory
-        return gpu_
 
     def get_gpu_memory_map(self):
         """Get the current gpu usage.
