@@ -2,6 +2,7 @@
 # encoding: utf-8
 
 import subprocess
+from dataclasses import dataclass
 
 import GPUtil
 from threading import Thread
@@ -26,9 +27,9 @@ class Monitor(Thread):
     def stop(self):
         self.stopped = True
 
+@dataclass
 class GPUChecker:
-    def __init__(self, gpu_id):
-        self.gpu_id = gpu_id
+    gpu_id: int
 
     def check_gpu_by_id(self, id, memory):
         gpu_used = get_gpu_memory_map()
