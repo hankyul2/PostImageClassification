@@ -8,11 +8,13 @@ import GPUtil
 from threading import Thread
 import time
 
+
 class Monitor(Thread):
     """
     10초 단위로 gpu 사용량을 알려주는 쓰레드 생성
     monitor = Monitor(10)
     """
+
     def __init__(self, delay):
         super(Monitor, self).__init__()
         self.stopped = False
@@ -27,23 +29,22 @@ class Monitor(Thread):
     def stop(self):
         self.stopped = True
 
-@dataclass
-class GPUChecker:
-    gpu_id: int
 
-    def check_gpu_by_id(self, id, memory):
-        gpu_used = get_gpu_memory_map()
-        assert gpu_used[id] >= memory
+class GPU:
+    def give_me_maximum_gpu(self, gpu_id):
+        pass
 
-    def get_gpu_memory_map(self):
-        """Get the current gpu usage.
+    def show_gpu_memory(self):
+        print(self.remaining_memory)
 
-        Returns
-        -------
-        usage: dict
-            Keys are device ids as integers.
-            Values are memory usage as integers in MB.
-        """
+    def can_use_it(self, gpu_id:int, memory:int):
+        assert isinstance(gpu_id, int) and isinstance(memory, int), "gpu_id, memory should be int"
+        assert 25 > memory > 0, "memory should be between 1 and 24"
+        assert memory*1000 < self.remaining_memory[gpu_id]
+        return True
+
+    @property
+    def remaining_memory(self):
         result = subprocess.check_output(
             [
                 'nvidia-smi', '--query-gpu=memory.free',
@@ -53,5 +54,3 @@ class GPUChecker:
         gpu_memory = [int(x) for x in result.strip().split('\n')]
         gpu_memory_map = dict(zip(range(len(gpu_memory)), gpu_memory))
         return gpu_memory_map
-
-

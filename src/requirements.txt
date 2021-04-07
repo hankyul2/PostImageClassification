@@ -6,3 +6,5 @@ numpy
 sklearn
 notebook
 GPUtil
+mypy-lang
+pytest
