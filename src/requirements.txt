@@ -1,0 +1,8 @@
+opencv-python
+matplotlib
+pandas
+tensorboard
+numpy
+sklearn
+notebook
+GPUtil
