@@ -3,51 +3,40 @@
 
 import subprocess
 from dataclasses import dataclass
-
-import GPUtil
-from threading import Thread
-import time
+from typing import Dict
 
 
-class Monitor(Thread):
-    """
-    10초 단위로 gpu 사용량을 알려주는 쓰레드 생성
-    monitor = Monitor(10)
-    """
-
-    def __init__(self, delay):
-        super(Monitor, self).__init__()
-        self.stopped = False
-        self.delay = delay  # Time between calls to GPUtil
-        self.start()
-
-    def run(self):
-        while not self.stopped:
-            GPUtil.showUtilization()
-            time.sleep(self.delay)
-
-    def stop(self):
-        self.stopped = True
-
-
+@dataclass
 class GPU:
+
     def give_me_maximum_gpu(self, gpu_id):
         pass
 
     def show_gpu_memory(self):
         print(self.remaining_memory)
 
-    def can_use_it(self, gpu_id:int, memory:int):
+    def can_use_it(self, gpu_id: int, memory: int):
         assert isinstance(gpu_id, int) and isinstance(memory, int), "gpu_id, memory should be int"
         assert 25 > memory > 0, "memory should be between 1 and 24"
-        assert memory*1000 < self.remaining_memory[gpu_id]
+        assert memory * 1000 < self.remaining_memory[gpu_id]
         return True
 
     @property
     def remaining_memory(self):
+        return self.nividia_query('free')
+
+    @property
+    def used_memory(self):
+        return self.nividia_query('used')
+
+    @property
+    def total_memory(self):
+        return self.nividia_query('total')
+
+    def nividia_query(self, query_type:str) -> Dict:
         result = subprocess.check_output(
             [
-                'nvidia-smi', '--query-gpu=memory.free',
+                'nvidia-smi', '--query-gpu=memory.{}'.format(query_type),
                 '--format=csv,nounits,noheader'
             ]).decode('utf-8')
         # Convert lines into a dictionary
