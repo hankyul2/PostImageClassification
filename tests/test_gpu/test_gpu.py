@@ -19,8 +19,14 @@ def test_gpu_check_minimum(gpu):
 
 def test_gpu_check_memory(gpu):
     for gpu_id in range(5):
-        if gpu.remaining_memory[gpu_id] > 10000:
+        if gpu.remaining_memory[gpu_id] > 1000:
             assert gpu.can_use_it(gpu_id, 10)
+
+
+def test_gpu_used_memory(gpu):
+    for gpu_id in range(5):
+        assert gpu.remaining_memory[gpu_id] + gpu.used_memory[gpu_id] == \
+            gpu.total_memory[gpu_id]
 
 
 @pytest.mark.skip(reason="not implemented yet")
