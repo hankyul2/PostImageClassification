@@ -18,8 +18,11 @@ class GPU:
     def can_use_it(self, gpu_id: int, memory: int):
         assert isinstance(gpu_id, int) and isinstance(memory, int), "gpu_id, memory should be int"
         assert 25 > memory > 0, "memory should be between 1 and 24"
-        assert memory * 1000 < self.remaining_memory[gpu_id]
-        return True
+        memory_in_gb = memory * 1000
+        if memory_in_gb < self.remaining_memory[gpu_id]:
+            return True
+        else:
+            return False
 
     @property
     def remaining_memory(self):

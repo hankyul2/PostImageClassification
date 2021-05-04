@@ -19,7 +19,7 @@ def test_gpu_check_minimum(gpu):
 
 def test_gpu_check_memory(gpu):
     for gpu_id in range(5):
-        if gpu.remaining_memory[gpu_id] > 1000:
+        if gpu.remaining_memory[gpu_id] > 10 * 1000:
             assert gpu.can_use_it(gpu_id, 10)
 
 
