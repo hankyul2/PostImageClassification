@@ -3,9 +3,10 @@ from easydict import EasyDict
 
 from src.postTrain.models import get_network
 from src.postTrain.resnet import ResNet
+from src.postTrain.wresnet import conv3x3
 
 
-def test_get_network():
+def test_get_resnet_network():
     args = EasyDict({
         "net":"resnet50",
         "gpu":GPUtil.getFirstAvailable(),
@@ -20,5 +21,8 @@ def test_get_network():
     assert isinstance(get_network(args), ResNet)
 
 
-def test_get_model():
-    assert False
+def test_get_wreset_model():
+    pass
+
+def test_conv3x3():
+    conv = conv3x3(2, 2)

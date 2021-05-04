@@ -1,11 +1,11 @@
 def test_monitor_construction(monitor):
-    assert 0 == monitor.max_gpu_memory_used
-    assert (False == monitor.stopped)
+    assert monitor.max_gpu_memory_used == 0
+    assert (monitor.stopped == False)
     stop_monitor(monitor)
 
 
 def test_monitor_max_memory_used(monitor):
-    assert 0 == monitor.max_memory_used
+    assert monitor.max_memory_used == 0
     stop_monitor(monitor)
 
 

@@ -12,13 +12,13 @@ def main(args):
     gpu.can_use_it(args.gpu, args.memory)
     monitor = Monitor(args.print_freq, args.gpu)
     net = get_network(args)
-
+    print("hello")
     monitor.stop()
 
 if "__main__" == __name__:
     args = edict({
         "net":"resnet50",
-        "gpu":0,
+        "gpu":3,
         "memory":24,
         "numb_worker":4,
         "print_freq":60,

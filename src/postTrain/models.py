@@ -12,4 +12,6 @@ def get_network(args):
         return ResNet(BottleNeck, [3, 4, 23, 3])
     elif args.net == "resnet152":
         return ResNet(BottleNeck, [3, 8, 36, 3])
+    elif args.net == "wresent28-2":
+        return Wresnet(28, 2)
 
