@@ -1,0 +1,10 @@
+opencv-python
+matplotlib
+pandas
+tensorboard
+numpy
+sklearn
+notebook
+GPUtil
+mypy-lang
+pytest
