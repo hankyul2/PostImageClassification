@@ -5,6 +5,8 @@ import subprocess
 from dataclasses import dataclass
 from typing import Dict
 
+import torch
+
 
 @dataclass
 class GPU:
@@ -24,6 +26,20 @@ class GPU:
         else:
             return False
 
+    def get_device(self, gpu_id: int = -1):
+        if torch.cuda.is_available():
+            if gpu_id == -1:
+                raise Exception("not implemented yet")
+            else:
+                if self.can_use_it(gpu_id, 24):
+                    device = "cuda:" + str(gpu_id)
+                    torch.backends.cudnn.benchmark = True
+                else:
+                    raise Exception("please use other devices")
+        else:
+            device = "cpu"
+        return device
+
     @property
     def remaining_memory(self):
         return self.nividia_query('free')
@@ -36,7 +52,7 @@ class GPU:
     def total_memory(self):
         return self.nividia_query('total')
 
-    def nividia_query(self, query_type:str) -> Dict:
+    def nividia_query(self, query_type: str) -> Dict:
         result = subprocess.check_output(
             [
                 'nvidia-smi', '--query-gpu=memory.{}'.format(query_type),
