@@ -50,6 +50,7 @@ class residual(nn.Module):
         return self.identity(x) + self.layer(x)
 
 class WRN(nn.Module):
+    # Todo: Re-implement WRN. This implementation is really shit
     """ WRN28-width with leaky relu (negative slope is 0.1)"""
     def __init__(self, width, num_classes, transform_fn=None):
         super().__init__()
