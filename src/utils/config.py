@@ -23,7 +23,7 @@ def get_config():
     pt_config = {
         # post train
         "top_k": 5,
-        "lr": 3e-4,
+        "lr": 3e-5,
         "consis_coef": 1,
     }
     supervised_config = {

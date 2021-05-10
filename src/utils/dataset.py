@@ -14,13 +14,31 @@ class CIFAR10:
     def __getitem__(self, idx):
         image = self.dataset["images"][idx]
         label = self.dataset["labels"][idx]
-        if self.split == 'u_train':
-            real_label = self.dataset["real_labels"][idx]
-            return image, label, real_label
+        # if self.split == 'u_train':
+        #     real_label = self.dataset["real_labels"][idx]
+        #     return image, label, real_label
         return image, label
 
     def __len__(self):
         return len(self.dataset["images"])
+
+
+class POSTDATASET:
+    def __init__(self, root, split="l_train"):
+        self.split = split
+        self.dataset = np.load(os.path.join(root, split + ".npy"), allow_pickle=True).item()
+
+    def __getitem__(self, idx):
+        image = self.dataset["images"][idx]
+        label = self.dataset["labels"][idx]
+        # if self.split == 'u_train':
+        #     real_label = self.dataset["real_labels"][idx]
+        #     return image, label, real_label
+        return image, label
+
+    def __len__(self):
+        return len(self.dataset["images"])
+
 
 class transform:
     def __init__(self, flip=True, r_crop=True, g_noise=True):
@@ -43,6 +61,7 @@ class transform:
             n = torch.randn_like(x) * 0.15
             x = n + x
         return x
+
 
 class RandomSampler(torch.utils.data.Sampler):
     """ sampling without replacement """

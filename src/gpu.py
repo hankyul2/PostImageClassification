@@ -31,7 +31,7 @@ class GPU:
             if gpu_id == -1:
                 raise Exception("not implemented yet")
             else:
-                if self.can_use_it(gpu_id, 24):
+                if self.can_use_it(gpu_id, 20):
                     device = "cuda:" + str(gpu_id)
                     torch.backends.cudnn.benchmark = True
                 else:

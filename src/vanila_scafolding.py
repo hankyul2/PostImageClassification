@@ -20,12 +20,12 @@ from src.utils.data import download_preprocess_save_data
 
 def get_args() -> edict:
     d = edict({
-        'alg': "supervised",
+        'alg': "PL",
         'em': 0,
         'validation': 820,
         'dataset': "cifar10",
         'root': "data",
-        'model_name':'supervised1',
+        'model_name':'pl1',
         'output': "./exp_res",
         'gpu':3
     })
