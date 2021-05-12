@@ -26,6 +26,14 @@ def get_config():
         "lr": 3e-5,
         "consis_coef": 1,
     }
+    mm_config = {
+        # mixmatch
+        "lr": 3e-3,
+        "consis_coef": 100,
+        "alpha": 0.75,
+        "T": 0.5,
+        "K": 2,
+    }
     supervised_config = {
         "lr": 3e-3
     }
@@ -35,5 +43,6 @@ def get_config():
         "supervised": supervised_config,
         "PL": pl_config,
         "PT": pt_config,
+        "MM": mm_config,
     }
     return config

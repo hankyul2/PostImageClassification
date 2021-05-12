@@ -14,9 +14,9 @@ class CIFAR10:
     def __getitem__(self, idx):
         image = self.dataset["images"][idx]
         label = self.dataset["labels"][idx]
-        # if self.split == 'u_train':
-        #     real_label = self.dataset["real_labels"][idx]
-        #     return image, label, real_label
+        if self.split == 'u_train':
+            real_label = self.dataset["real_labels"][idx]
+            return image, label, real_label
         return image, label
 
     def __len__(self):

@@ -27,7 +27,7 @@ def get_args() -> edict:
         'alg': 'supervised',
         'dataset': "cifar10",
         'root': "data",
-        'model_name': 'pt2-2',
+        'model_name': 'pt2-3',
         'base_model_name': 'cifar10_PL_1620253529',
         'output': "./exp_res",
         'gpu': 4
@@ -65,7 +65,7 @@ class PostTrain:
         self.test = DataLoader(test_dataset, 100)
 
         self.model = model.output
-        self.lr = 3e-6
+        self.lr = 3e-5
         self.optimizer = Adam(self.model.parameters(), lr=self.lr)
         self.device = device
         self.model_save_path = self.get_best_model_save_path(args, exp_name)

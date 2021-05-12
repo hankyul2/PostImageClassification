@@ -3,6 +3,7 @@ from easydict import EasyDict as edict
 
 sys.path.append('./')
 
+
 import torch
 import torch.optim as optim
 import torch.nn.functional as F
@@ -15,19 +16,20 @@ from src.utils.config import get_config
 from src.utils.dataset import transform, RandomSampler
 from src.utils.ssl.post_train import PT
 from src.utils.ssl.pseudo_label import PL
+from src.utils.ssl.mixmatch import MixMatch
 from src.utils.data import download_preprocess_save_data
 
 
 def get_args() -> edict:
     d = edict({
-        'alg': "PL",
+        'alg': "MM",
         'em': 0,
         'validation': 820,
         'dataset': "cifar10",
         'root': "data",
-        'model_name':'pl1',
+        'model_name':'mixmatch1',
         'output': "./exp_res",
-        'gpu':3
+        'gpu':4
     })
     return d
 
@@ -225,6 +227,8 @@ def get_model(args, alg_cfg, dataset_cfg, device):
         ssl_obj = PL(alg_cfg["threashold"])
     elif args.alg == "PT":  # post train
         ssl_obj = PT(alg_cfg["top_k"], optim.Adam, alg_cfg['lr'])
+    elif args.alg == "MM":  # MixMatch
+        ssl_obj = MixMatch(alg_cfg["T"], alg_cfg["K"], alg_cfg["alpha"])
     elif args.alg == "supervised":
         ssl_obj = None
     else:
