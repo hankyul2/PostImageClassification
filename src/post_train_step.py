@@ -27,7 +27,7 @@ def get_args() -> edict:
         'alg': 'supervised',
         'dataset': "cifar10",
         'root': "data",
-        'model_name': 'pt1-4',
+        'model_name': 'pt2-2',
         'base_model_name': 'cifar10_PL_1620253529',
         'output': "./exp_res",
         'gpu': 4
@@ -124,16 +124,15 @@ class PostTrain:
         return acc
 
     def post_train(self):
+        writer = SummaryWriter(os.path.join('run', self.model_name))
         maximum_val_acc = .0
 
         for iteration in range(100):
             # PseudoLabel = additional_pseudo_label / size_unlabelled_data if additional_pseudo_label != 0 else 0
             # CorrectPseudoLabel = correct_pseudo_label / additional_pseudo_label if correct_pseudo_label != 0 else 0
 
-            # PseudoLabel, CorrectPseudoLabel = self.train_fn()
-
+            self.train_fn2(iteration, writer)
             acc = self.test_fn(self.val)
-
             print("\n### validation ###")
             print("\nvaridation accuracy : {}".format(acc))
 
@@ -146,123 +145,112 @@ class PostTrain:
 
                 torch.save(self.model.state_dict(), os.path.join(self.model_save_path, "best_model.pth"))
 
-            # writer.add_scalar('Accuracy/Validation', acc * 100, iteration)
-            # writer.add_scalar('SSL/PseudoLabelPercent', PseudoLabel * 100, iteration)
-            # writer.add_scalar('SSL/CorrectPseudoLabelPercent', CorrectPseudoLabel * 100, iteration)
+            writer.add_scalar('Accuracy/Validation', acc * 100, iteration * 100)
 
         return maximum_val_acc
 
-    def train_fn(self, top_k=5, optim=Adam):
+    def train_fn(self, I, writer, top_k=5, optim=Adam):
         self.model.train()
-        writer = SummaryWriter(os.path.join('run', self.model_name))
 
-        for I in range(100):
-            for iter, (xs, ys) in enumerate(self.test):
-                pseudo_label = 0
-                correct_pseudo_label = 0
+        for iter, (xs, ys) in enumerate(self.test):
+            pseudo_label = 0
+            correct_pseudo_label = 0
 
-                loss_org = self.get_loss(self.model, self.l_train)
-                x_data = list()
-                y_pseudo = list([torch.tensor(-1) for _ in range(100)])
+            loss_org = self.get_loss(self.model, self.l_train)
+            x_data = list()
+            y_pseudo = list([torch.tensor(-1) for _ in range(100)])
 
-                xs, ys = xs.to(self.device).float(), ys.to(self.device).long()
-                output = self.model(xs)
-                top_list = torch.topk(output, top_k)[1].long()
-                total_size = len(xs)
-                for idx, (x, y, y_preds) in enumerate(zip(xs, ys, top_list)):
-                    min_val = torch.tensor(100.0, device=self.device)
-                    min_label = torch.tensor(0, device=self.device)
-                    for y_hat in y_preds:
-                        model_copy = copy.deepcopy(self.model)
-                        optimizer = optim(model_copy.parameters(), lr=self.lr)
-                        y_pred = model_copy(x.reshape(-1, *x.shape))
-                        loss = F.cross_entropy(y_pred, y_hat.reshape(-1, *y_hat.shape))
-                        optimizer.zero_grad()
-                        loss.backward()
-                        optimizer.step()
+            xs, ys = xs.to(self.device).float(), ys.to(self.device).long()
+            output = self.model(xs)
+            top_list = torch.topk(output, top_k)[1].long()
+            total_size = len(xs)
+            for idx, (x, y, y_preds) in enumerate(zip(xs, ys, top_list)):
+                min_val = torch.tensor(100.0, device=self.device)
+                min_label = torch.tensor(0, device=self.device)
+                for y_hat in y_preds:
+                    model_copy = copy.deepcopy(self.model)
+                    optimizer = optim(model_copy.parameters(), lr=self.lr)
+                    y_pred = model_copy(x.reshape(-1, *x.shape))
+                    loss = F.cross_entropy(y_pred, y_hat.reshape(-1, *y_hat.shape))
+                    optimizer.zero_grad()
+                    loss.backward()
+                    optimizer.step()
 
-                        loss_updated = self.get_loss(model_copy, self.l_train)
-                        loss_diff = loss_updated - loss_org
+                    loss_updated = self.get_loss(model_copy, self.l_train)
+                    loss_diff = loss_updated - loss_org
 
-                        if loss_diff < min_val:
-                            min_val = loss_diff
-                            min_label = y_hat
+                    if loss_diff < min_val:
+                        min_val = loss_diff
+                        min_label = y_hat
 
-                    if min_val < 0:
-                        pseudo_label += 1
-                        correct_pseudo_label += int(min_label == y)
-                        y_pseudo[idx] = min_label
-                        # correct_pseudo_label += int(y_preds[0] == y)
-                        # y_pseudo[idx] = y_preds[0]
+                if min_val < 0:
+                    pseudo_label += 1
+                    correct_pseudo_label += int(min_label == y)
+                    y_pseudo[idx] = min_label
+                    # correct_pseudo_label += int(y_preds[0] == y)
+                    # y_pseudo[idx] = y_preds[0]
 
-                    # writer.add_scalar('CrossEntropy/Diff', min_val, iter*100 + idx)
-                    x_data.append(x.reshape(-1, *x.shape))
+                # writer.add_scalar('CrossEntropy/Diff', min_val, iter*100 + idx)
+                x_data.append(x.reshape(-1, *x.shape))
 
-                y_pseudo = torch.tensor(y_pseudo, device=self.device)
-                x_data = torch.cat(x_data)
-                y_out = self.model(x_data)
-                loss = F.cross_entropy(y_out, y_pseudo.long(), reduction="none", size_average=True, ignore_index=-1).mean()
+            y_pseudo = torch.tensor(y_pseudo, device=self.device)
+            x_data = torch.cat(x_data)
+            y_out = self.model(x_data)
+            loss = F.cross_entropy(y_out, y_pseudo.long(), reduction="none", size_average=True, ignore_index=-1).mean()
 
-                self.optimizer.zero_grad()
-                loss.backward()
-                self.optimizer.step()
+            self.optimizer.zero_grad()
+            loss.backward()
+            self.optimizer.step()
 
-                loss_val = self.get_loss(self.model, self.val)
+            loss_val = self.get_loss(self.model, self.val)
 
-                print("[{}] LOSS(train test)=({:3.5f} {:3.5f}) | Pseudo Label={}/{} | Correct Pseudo Label={}/{}".format(iter, loss_org, loss, pseudo_label, 100, correct_pseudo_label, pseudo_label))
-                writer.add_scalar('Loss/train', loss_org, I*100 + iter)
-                writer.add_scalar('Loss/val', loss_val, I*100 + iter)
-                writer.add_scalar('Loss/test', loss, I*100 + iter)
-                writer.add_scalar('SSL/PseudoLabelPercent', pseudo_label/total_size*100, I*100 + iter)
-                writer.add_scalar('SSL/CorrectPseudoLabelPercent', correct_pseudo_label/pseudo_label*100, I*100 + iter)
-            print(
-                "===========================================================================================================")
+            print("[{}] LOSS(train test)=({:3.5f} {:3.5f}) | Pseudo Label={}/{} | Correct Pseudo Label={}/{}".format(iter, loss_org, loss, pseudo_label, 100, correct_pseudo_label, pseudo_label))
+            writer.add_scalar('Loss/train', loss_org, I*100 + iter)
+            writer.add_scalar('Loss/val', loss_val, I*100 + iter)
+            writer.add_scalar('Loss/test', loss, I*100 + iter)
+            writer.add_scalar('SSL/PseudoLabelPercent', pseudo_label/total_size*100, I*100 + iter)
+            writer.add_scalar('SSL/CorrectPseudoLabelPercent', correct_pseudo_label/pseudo_label*100, I*100 + iter)
+        print(
+            "===========================================================================================================")
 
-
-        return pseudo_label, correct_pseudo_label
-
-    def train_fn2(self, top_k=5, optim=Adam):
+    def train_fn2(self, I, writer, top_k=5, optim=Adam):
         self.model.train()
-        writer = SummaryWriter(os.path.join('run', self.model_name))
+        for iter, (xs, ys) in enumerate(self.test):
+            pseudo_label = 0
+            correct_pseudo_label = 0
 
-        for I in range(100):
-            for iter, (xs, ys) in enumerate(self.test):
-                pseudo_label = 0
-                correct_pseudo_label = 0
+            loss_org = self.get_loss(self.model, self.l_train)
+            y_pseudo = list([torch.tensor(-1) for _ in range(100)])
 
-                loss_org = self.get_loss(self.model, self.l_train)
-                y_pseudo = list([torch.tensor(-1) for _ in range(100)])
+            xs, ys = xs.to(self.device).float(), ys.to(self.device).long()
+            output = self.model(xs)
+            top_prob, top_list = torch.topk(output, top_k)
+            total_size = len(xs)
+            for idx, (x, y, y_probs, y_preds) in enumerate(zip(xs, ys, top_prob, top_list)):
+                if y_probs[0] > 0.95:
+                    pseudo_label += 1
+                    correct_pseudo_label += int(y_preds[0] == y)
+                    y_pseudo[idx] = y_preds[0]
 
-                xs, ys = xs.to(self.device).float(), ys.to(self.device).long()
-                output = self.model(xs)
-                top_prob, top_list = torch.topk(output, top_k)
-                total_size = len(xs)
-                for idx, (x, y, y_probs, y_preds) in enumerate(zip(xs, ys, top_prob, top_list)):
-                    if y_probs[0] > 0.95:
-                        pseudo_label += 1
-                        correct_pseudo_label += int(y_preds[0] == y)
-                        y_pseudo[idx] = y_preds[0]
+            y_pseudo = torch.tensor(y_pseudo, device=self.device)
+            y_out = self.model(xs)
+            loss = F.cross_entropy(y_out, y_pseudo.long(), reduction="none", size_average=True, ignore_index=-1).mean()
 
-                y_pseudo = torch.tensor(y_pseudo, device=self.device)
-                y_out = self.model(xs)
-                loss = F.cross_entropy(y_out, y_pseudo.long(), reduction="none", size_average=True, ignore_index=-1).mean()
+            self.optimizer.zero_grad()
+            loss.backward()
+            self.optimizer.step()
 
-                self.optimizer.zero_grad()
-                loss.backward()
-                self.optimizer.step()
+            loss_val = self.get_loss(self.model, self.val)
 
-                loss_val = self.get_loss(self.model, self.val)
+            print("[{}] LOSS(train test)=({:3.5f} {:3.5f}) | Pseudo Label={}/{} | Correct Pseudo Label={}/{}".format(iter, loss_org, loss, pseudo_label, total_size, correct_pseudo_label, pseudo_label))
+            writer.add_scalar('Loss/train', loss_org, I*100 + iter)
+            writer.add_scalar('Loss/val', loss_val, I*100 + iter)
+            writer.add_scalar('Loss/test', loss, I*100 + iter)
+            writer.add_scalar('SSL/PseudoLabelPercent', pseudo_label/total_size*100, I*100 + iter)
+            writer.add_scalar('SSL/CorrectPseudoLabelPercent', correct_pseudo_label/pseudo_label*100, I*100 + iter)
+        print(
+            '===========================================================================================================')
 
-                print("[{}] LOSS(train test)=({:3.5f} {:3.5f}) | Pseudo Label={}/{} | Correct Pseudo Label={}/{}".format(iter, loss_org, loss, pseudo_label, total_size, correct_pseudo_label, pseudo_label))
-                writer.add_scalar('Loss/train', loss_org, I*100 + iter)
-                writer.add_scalar('Loss/val', loss_val, I*100 + iter)
-                writer.add_scalar('Loss/test', loss, I*100 + iter)
-                writer.add_scalar('SSL/PseudoLabelPercent', pseudo_label/total_size*100, I*100 + iter)
-                writer.add_scalar('SSL/CorrectPseudoLabelPercent', correct_pseudo_label/pseudo_label*100, I*100 + iter)
-            print("===========================================================================================================")
-
-
-        return pseudo_label, correct_pseudo_label
 
     def get_loss(self, model, train):
         loss = torch.tensor(0.0, device=self.device)
@@ -274,4 +262,4 @@ class PostTrain:
 
 if __name__ == '__main__':
     tool = PostTrain()
-    tool.train_fn()
+    tool.post_train()
